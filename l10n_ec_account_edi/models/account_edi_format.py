@@ -281,12 +281,22 @@ class AccountEdiFormat(models.Model):
                             sri_res
                         )
                         errors.extend(msj)
+                        _logger.debug(
+                            "Re-auth attempt for %s got %s",
+                            edi_doc.l10n_ec_xml_access_key,
+                            {"is_auth": is_auth, "messages": msj},
+                        )
                     if not is_auth:
                         sri_res = edi_doc._l10n_ec_edi_send_xml(client_send, xml_signed)
                         is_sent, msj = edi_doc._l10n_ec_edi_process_response_send(
                             sri_res
                         )
                         errors.extend(msj)
+                        _logger.debug(
+                            "Send attempt for %s got %s",
+                            edi_doc.l10n_ec_xml_access_key,
+                            {"is_sent": is_sent, "messages": msj},
+                        )
                     if not is_auth and is_sent and not msj:
                         # guardar la fecha de envio al SRI
                         # en caso de errores, poder saber si hubo un intento o no
@@ -297,6 +307,11 @@ class AccountEdiFormat(models.Model):
                             sri_res
                         )
                         errors.extend(msj)
+                        _logger.debug(
+                            "Post send auth attempt for %s got %s",
+                            edi_doc.l10n_ec_xml_access_key,
+                            {"is_auth": is_auth, "messages": msj},
+                        )
             except Exception as ex:
                 _logger.error(traceback.format_exc())
                 errors.append(
@@ -305,14 +320,15 @@ class AccountEdiFormat(models.Model):
                         ex,
                     )
                 )
+            final_errors = [] if is_auth else errors
             blocking_level = False
-            if errors:
+            if final_errors:
                 blocking_level = "error"
             res.update(
                 {
                     document: {
-                        "success": True if not errors and is_auth else False,
-                        "error": "".join(errors),
+                        "success": bool(is_auth and not final_errors),
+                        "error": "".join(final_errors),
                         "attachment": attachment,
                         "blocking_level": blocking_level,
                     }
