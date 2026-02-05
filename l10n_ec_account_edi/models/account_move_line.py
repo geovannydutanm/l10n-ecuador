@@ -1,4 +1,8 @@
+import logging
+
 from odoo import models
+
+_logger = logging.getLogger(__name__)
 
 
 class AccountMoveLine(models.Model):
@@ -8,6 +12,7 @@ class AccountMoveLine(models.Model):
         self.ensure_one()
         EdiDocument = self.env["account.edi.document"]
         edi_values = self._prepare_edi_vals_to_export()
+        _logger.debug("Preciooo GD invoice %s", self.price_unit)
         res = {
             "codigoPrincipal": EdiDocument._l10n_ec_clean_str(
                 self.product_id.default_code or "NA"
@@ -21,7 +26,7 @@ class AccountMoveLine(models.Model):
             ),
             "cantidad": EdiDocument._l10n_ec_number_format(self.quantity, decimals=6),
             "precioUnitario": EdiDocument._l10n_ec_number_format(
-                self.price_unit, decimals=6
+                abs(self.price_unit), decimals=6
             ),
             "descuento": EdiDocument._l10n_ec_number_format(
                 edi_values["price_discount"], decimals=6
@@ -38,6 +43,7 @@ class AccountMoveLine(models.Model):
         self.ensure_one()
         EdiDocument = self.env["account.edi.document"]
         edi_values = self._prepare_edi_vals_to_export()
+        _logger.debug("Preciooo GD credit note %s", self.price_unit)
         res = {
             "codigoInterno": EdiDocument._l10n_ec_clean_str(
                 self.product_id.default_code or "NA"
@@ -48,7 +54,7 @@ class AccountMoveLine(models.Model):
             ),
             "cantidad": EdiDocument._l10n_ec_number_format(self.quantity, decimals=6),
             "precioUnitario": EdiDocument._l10n_ec_number_format(
-                self.price_unit, decimals=6
+                abs(self.price_unit), decimals=6
             ),
             "descuento": EdiDocument._l10n_ec_number_format(
                 edi_values["price_discount"], decimals=6
@@ -90,12 +96,13 @@ class AccountMoveLine(models.Model):
     def l10n_ec_get_debit_note_edi_data(self, taxes_data):
         self.ensure_one()
         EdiDocument = self.env["account.edi.document"]
+        _logger.debug("Preciooo GD debit note %s", self.price_unit)
         detail_dict = {
             "descripcion": EdiDocument._l10n_ec_clean_str(
                 (self.product_id.name or self.name or "NA")[:300]
             ),
             "precioUnitario": EdiDocument._l10n_ec_number_format(
-                self.price_unit, decimals=6
+                abs(self.price_unit), decimals=6
             ),
         }
         return detail_dict
