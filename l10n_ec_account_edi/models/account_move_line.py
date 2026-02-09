@@ -1,4 +1,8 @@
+import logging
+
 from odoo import models
+
+_logger = logging.getLogger(__name__)
 
 
 class AccountMoveLine(models.Model):
@@ -8,6 +12,11 @@ class AccountMoveLine(models.Model):
         self.ensure_one()
         EdiDocument = self.env["account.edi.document"]
         edi_values = self._prepare_edi_vals_to_export()
+        _logger.info(
+            "Preciooo GD invoice price_unit=%s subtotal=%s",
+            self.price_unit,
+            edi_values["price_subtotal_before_discount"],
+        )
         res = {
             "codigoPrincipal": EdiDocument._l10n_ec_clean_str(
                 self.product_id.default_code or "NA"
@@ -21,13 +30,13 @@ class AccountMoveLine(models.Model):
             ),
             "cantidad": EdiDocument._l10n_ec_number_format(self.quantity, decimals=6),
             "precioUnitario": EdiDocument._l10n_ec_number_format(
-                self.price_unit, decimals=6
+                abs(self.price_unit), decimals=6
             ),
             "descuento": EdiDocument._l10n_ec_number_format(
                 edi_values["price_discount"], decimals=6
             ),
             "precioTotalSinImpuesto": EdiDocument._l10n_ec_number_format(
-                edi_values["price_subtotal_before_discount"], decimals=6
+                abs(edi_values["price_subtotal_before_discount"]), decimals=6
             ),
             "detallesAdicionales": self._l10n_ec_get_invoice_edi_additional_data(),
             "impuestos": self._l10n_ec_get_invoice_edi_taxes(taxes_data),
@@ -38,6 +47,11 @@ class AccountMoveLine(models.Model):
         self.ensure_one()
         EdiDocument = self.env["account.edi.document"]
         edi_values = self._prepare_edi_vals_to_export()
+        _logger.info(
+            "Preciooo GD credit note price_unit=%s subtotal=%s",
+            self.price_unit,
+            edi_values["price_subtotal_before_discount"],
+        )
         res = {
             "codigoInterno": EdiDocument._l10n_ec_clean_str(
                 self.product_id.default_code or "NA"
@@ -48,13 +62,13 @@ class AccountMoveLine(models.Model):
             ),
             "cantidad": EdiDocument._l10n_ec_number_format(self.quantity, decimals=6),
             "precioUnitario": EdiDocument._l10n_ec_number_format(
-                self.price_unit, decimals=6
+                abs(self.price_unit), decimals=6
             ),
             "descuento": EdiDocument._l10n_ec_number_format(
                 edi_values["price_discount"], decimals=6
             ),
             "precioTotalSinImpuesto": EdiDocument._l10n_ec_number_format(
-                edi_values["price_subtotal_before_discount"], decimals=6
+                abs(edi_values["price_subtotal_before_discount"]), decimals=6
             ),
             "detallesAdicionales": self._l10n_ec_get_credit_note_edi_additional_data(),
             "impuestos": self._l10n_ec_get_credit_note_edi_taxes(taxes_data),
@@ -90,12 +104,13 @@ class AccountMoveLine(models.Model):
     def l10n_ec_get_debit_note_edi_data(self, taxes_data):
         self.ensure_one()
         EdiDocument = self.env["account.edi.document"]
+        _logger.info("Preciooo GD debit note price_unit=%s", self.price_unit)
         detail_dict = {
             "descripcion": EdiDocument._l10n_ec_clean_str(
                 (self.product_id.name or self.name or "NA")[:300]
             ),
             "precioUnitario": EdiDocument._l10n_ec_number_format(
-                self.price_unit, decimals=6
+                abs(self.price_unit), decimals=6
             ),
         }
         return detail_dict
