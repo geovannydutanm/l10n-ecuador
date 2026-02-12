@@ -139,11 +139,6 @@ class AccountEdiDocument(models.Model):
                     tax_amount = tax_data.get("tax_amount_currency") or 0.0
                     entry["base"] += Decimal(str(base_amount))
                     entry["valor"] += Decimal(str(tax_amount))
-        _logger.debug(
-            "l10n_ec_header_get_total_with_taxes grouped %s records from %s lines",
-            len(grouped_taxes),
-            len(per_record),
-        )
         res = []
         for (codigo, codigo_porcentaje), aggregated in grouped_taxes.items():
             tax = aggregated["tax"]
@@ -595,11 +590,6 @@ class AccountEdiDocument(models.Model):
         """
         msj_list = []
         response_data = serialize_object(response, dict)
-        _logger.debug(
-            "SRI send response for %s: %s",
-            self.l10n_ec_xml_access_key or "unknown",
-            response_data,
-        )
 
         try:
             ok = response_data.get("estado", "") == "RECIBIDA"
@@ -621,7 +611,7 @@ class AccountEdiDocument(models.Model):
                     msj_str = f"{tipo} [{identificador}] {messaje} {additional_info}"
                     msj_list.append(msj_str)
         except Exception as e:
-            msj_list.append(e)
+            msj_list.append(str(e))
             _logger.info(
                 "can't validate document, clave de acceso %s. ERROR: %s TRACEBACK: %s",
                 self.l10n_ec_xml_access_key,
@@ -654,11 +644,6 @@ class AccountEdiDocument(models.Model):
         is_auth = False
         msj_list = []
         response_data = serialize_object(response, dict)
-        _logger.debug(
-            "SRI auth response for %s: %s",
-            self.l10n_ec_xml_access_key or "unknown",
-            response_data,
-        )
         if not response_data or not response_data.get("autorizaciones"):
             _logger.warning("Authorization response error, No Autorizacion in response")
             return is_auth, msj_list
