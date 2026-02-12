@@ -12,7 +12,11 @@ class AccountMoveLine(models.Model):
         self.ensure_one()
         EdiDocument = self.env["account.edi.document"]
         edi_values = self._prepare_edi_vals_to_export()
-        _logger.debug("Preciooo GD invoice %s", self.price_unit)
+        _logger.debug(
+            "Preciooo GD invoice %s subtotal %s",
+            self.price_unit,
+            edi_values["price_subtotal_before_discount"],
+        )
         res = {
             "codigoPrincipal": EdiDocument._l10n_ec_clean_str(
                 self.product_id.default_code or "NA"
@@ -43,7 +47,11 @@ class AccountMoveLine(models.Model):
         self.ensure_one()
         EdiDocument = self.env["account.edi.document"]
         edi_values = self._prepare_edi_vals_to_export()
-        _logger.debug("Preciooo GD credit note %s", self.price_unit)
+        _logger.debug(
+            "Preciooo GD credit note %s subtotal %s",
+            self.price_unit,
+            edi_values["price_subtotal_before_discount"],
+        )
         res = {
             "codigoInterno": EdiDocument._l10n_ec_clean_str(
                 self.product_id.default_code or "NA"
