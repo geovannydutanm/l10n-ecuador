@@ -230,11 +230,11 @@ class AccountEdiFormat(models.Model):
                 document.write({"l10n_ec_is_edi_doc": True})
             errors = []
             is_auth = False
+            attachment = False
             try:
                 for edi_doc in edi_docs:
                     attachment = edi_doc.attachment_id
                     xml_file = edi_doc._l10n_ec_render_xml_edi()
-                    _logger.debug(xml_file)
                     edi_doc._l10n_ec_action_check_xsd(xml_file)
                     xml_signed = company.l10n_ec_key_type_id.action_sign(xml_file)
                     if not attachment:
@@ -258,20 +258,10 @@ class AccountEdiFormat(models.Model):
                             }
                         )
                     if client_send is None or auth_client is None:
-                        res.update(
-                            {
-                                document: {
-                                    "success": False,
-                                    "error": _(
-                                        "Can't connect to SRI Webservice, try in few "
-                                        "minutes"
-                                    ),
-                                    "attachment": attachment,
-                                    "blocking_level": "error",
-                                }
-                            }
+                        errors.append(
+                            _("Can't connect to SRI Webservice, try in few minutes")
                         )
-                        continue
+                        break
                     # intentar consultar el documento previamente autorizado
                     is_sent = False
                     msj = []
@@ -281,22 +271,12 @@ class AccountEdiFormat(models.Model):
                             sri_res
                         )
                         errors.extend(msj)
-                        _logger.debug(
-                            "Re-auth attempt for %s got %s",
-                            edi_doc.l10n_ec_xml_access_key,
-                            {"is_auth": is_auth, "messages": msj},
-                        )
                     if not is_auth:
                         sri_res = edi_doc._l10n_ec_edi_send_xml(client_send, xml_signed)
                         is_sent, msj = edi_doc._l10n_ec_edi_process_response_send(
                             sri_res
                         )
                         errors.extend(msj)
-                        _logger.debug(
-                            "Send attempt for %s got %s",
-                            edi_doc.l10n_ec_xml_access_key,
-                            {"is_sent": is_sent, "messages": msj},
-                        )
                     if not is_auth and is_sent and not msj:
                         # guardar la fecha de envio al SRI
                         # en caso de errores, poder saber si hubo un intento o no
@@ -307,11 +287,6 @@ class AccountEdiFormat(models.Model):
                             sri_res
                         )
                         errors.extend(msj)
-                        _logger.debug(
-                            "Post send auth attempt for %s got %s",
-                            edi_doc.l10n_ec_xml_access_key,
-                            {"is_auth": is_auth, "messages": msj},
-                        )
             except Exception as ex:
                 _logger.error(traceback.format_exc())
                 errors.append(
@@ -328,7 +303,7 @@ class AccountEdiFormat(models.Model):
                 {
                     document: {
                         "success": bool(is_auth and not final_errors),
-                        "error": "".join(final_errors),
+                        "error": "".join(map(str, final_errors)),
                         "attachment": attachment,
                         "blocking_level": blocking_level,
                     }
