@@ -27,7 +27,7 @@ class AccountMoveLine(models.Model):
                 edi_values["price_discount"], decimals=6
             ),
             "precioTotalSinImpuesto": EdiDocument._l10n_ec_number_format(
-                abs(edi_values["price_subtotal_before_discount"]), decimals=6
+                abs(edi_values["price_subtotal"]), decimals=6
             ),
             "detallesAdicionales": self._l10n_ec_get_invoice_edi_additional_data(),
             "impuestos": self._l10n_ec_get_invoice_edi_taxes(taxes_data),
@@ -54,7 +54,7 @@ class AccountMoveLine(models.Model):
                 edi_values["price_discount"], decimals=6
             ),
             "precioTotalSinImpuesto": EdiDocument._l10n_ec_number_format(
-                abs(edi_values["price_subtotal_before_discount"]), decimals=6
+                abs(edi_values["price_subtotal"]), decimals=6
             ),
             "detallesAdicionales": self._l10n_ec_get_credit_note_edi_additional_data(),
             "impuestos": self._l10n_ec_get_credit_note_edi_taxes(taxes_data),
