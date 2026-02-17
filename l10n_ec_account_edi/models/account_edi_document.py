@@ -2,6 +2,7 @@ import logging
 import re
 import traceback
 from datetime import datetime
+from decimal import Decimal
 from os import path
 from random import randint
 
@@ -108,15 +109,49 @@ class AccountEdiDocument(models.Model):
 
     def l10n_ec_header_get_total_with_taxes(self, taxes_data):
         self.ensure_one()
-        res = []
+        grouped_taxes = {}
         per_record = (taxes_data or {}).get("tax_details_per_record") or {}
         for rec_vals in per_record.values():
             tax_details = rec_vals.get("tax_details") or {}
             for td in tax_details.values():
                 taxes_data_list = td.get("taxes_data") or []
-                if not taxes_data_list:
-                    continue
-                res.append(self._l10n_ec_prepare_tax_vals_edi(taxes_data_list[0]))
+                for tax_data in taxes_data_list:
+                    tax = tax_data.get("tax")
+                    if not tax:
+                        trl = tax_data.get("tax_repartition_line")
+                        tax = trl.tax_id if trl else None
+                    if not tax or not tax.tax_group_id:
+                        continue
+                    codigo = tax.tax_group_id.l10n_ec_xml_fe_code
+                    codigo_porcentaje = tax.l10n_ec_xml_fe_code
+                    if not (codigo and codigo_porcentaje):
+                        continue
+                    key = (codigo, codigo_porcentaje)
+                    entry = grouped_taxes.setdefault(
+                        key,
+                        {
+                            "tax": tax,
+                            "base": Decimal("0.0"),
+                            "valor": Decimal("0.0"),
+                        },
+                    )
+                    base_amount = tax_data.get("base_amount_currency") or 0.0
+                    tax_amount = tax_data.get("tax_amount_currency") or 0.0
+                    entry["base"] += Decimal(str(base_amount))
+                    entry["valor"] += Decimal(str(tax_amount))
+        res = []
+        for (codigo, codigo_porcentaje), aggregated in grouped_taxes.items():
+            tax = aggregated["tax"]
+            base_amount = abs(aggregated["base"])
+            valor = abs(aggregated["valor"])
+            tax_vals = {
+                "codigo": codigo,
+                "codigoPorcentaje": codigo_porcentaje,
+                "baseImponible": self._l10n_ec_number_format(float(base_amount), 2),
+                "tarifa": self._l10n_ec_number_format(abs(tax.amount or 0.0), 2),
+                "valor": self._l10n_ec_number_format(float(valor), 2),
+            }
+            res.append(tax_vals)
         return res
 
     def _l10n_ec_get_environment(self):
@@ -576,7 +611,7 @@ class AccountEdiDocument(models.Model):
                     msj_str = f"{tipo} [{identificador}] {messaje} {additional_info}"
                     msj_list.append(msj_str)
         except Exception as e:
-            msj_list.append(e)
+            msj_list.append(str(e))
             _logger.info(
                 "can't validate document, clave de acceso %s. ERROR: %s TRACEBACK: %s",
                 self.l10n_ec_xml_access_key,

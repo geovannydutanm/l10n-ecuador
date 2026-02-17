@@ -21,13 +21,13 @@ class AccountMoveLine(models.Model):
             ),
             "cantidad": EdiDocument._l10n_ec_number_format(self.quantity, decimals=6),
             "precioUnitario": EdiDocument._l10n_ec_number_format(
-                self.price_unit, decimals=6
+                abs(self.price_unit), decimals=6
             ),
             "descuento": EdiDocument._l10n_ec_number_format(
                 edi_values["price_discount"], decimals=6
             ),
             "precioTotalSinImpuesto": EdiDocument._l10n_ec_number_format(
-                edi_values["price_subtotal_before_discount"], decimals=6
+                abs(edi_values["price_subtotal"]), decimals=6
             ),
             "detallesAdicionales": self._l10n_ec_get_invoice_edi_additional_data(),
             "impuestos": self._l10n_ec_get_invoice_edi_taxes(taxes_data),
@@ -48,13 +48,13 @@ class AccountMoveLine(models.Model):
             ),
             "cantidad": EdiDocument._l10n_ec_number_format(self.quantity, decimals=6),
             "precioUnitario": EdiDocument._l10n_ec_number_format(
-                self.price_unit, decimals=6
+                abs(self.price_unit), decimals=6
             ),
             "descuento": EdiDocument._l10n_ec_number_format(
                 edi_values["price_discount"], decimals=6
             ),
             "precioTotalSinImpuesto": EdiDocument._l10n_ec_number_format(
-                edi_values["price_subtotal_before_discount"], decimals=6
+                abs(edi_values["price_subtotal"]), decimals=6
             ),
             "detallesAdicionales": self._l10n_ec_get_credit_note_edi_additional_data(),
             "impuestos": self._l10n_ec_get_credit_note_edi_taxes(taxes_data),
@@ -95,7 +95,7 @@ class AccountMoveLine(models.Model):
                 (self.product_id.name or self.name or "NA")[:300]
             ),
             "precioUnitario": EdiDocument._l10n_ec_number_format(
-                self.price_unit, decimals=6
+                abs(self.price_unit), decimals=6
             ),
         }
         return detail_dict
